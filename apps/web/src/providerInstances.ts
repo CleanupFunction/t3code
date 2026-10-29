@@ -9,6 +9,7 @@ import {
   ProviderInstanceId,
   type ServerProvider,
   type ServerProviderModel,
+  type ServerProviderSkill,
   type ServerSettings,
   type ServerProviderState,
 } from "@t3tools/contracts";
@@ -41,6 +42,7 @@ export interface ProviderInstanceEntry {
   readonly isAvailable: boolean;
   readonly snapshot: ServerProvider;
   readonly models: ReadonlyArray<ServerProviderModel>;
+  readonly skills: ReadonlyArray<ServerProviderSkill>;
 }
 
 /** Disabled instances may retain ready status until reconciliation. */
@@ -76,6 +78,7 @@ export function deriveProviderInstanceEntries(
       isAvailable: snapshot.availability !== "unavailable",
       snapshot,
       models: snapshot.models,
+      skills: snapshot.skills,
     } satisfies ProviderInstanceEntry;
   });
 }

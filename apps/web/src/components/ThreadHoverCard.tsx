@@ -17,7 +17,7 @@ export function ThreadHoverCard({
   children,
   footer,
 }: {
-  title: string;
+  title: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }) {
