@@ -20,6 +20,14 @@ const mockSkills: ServerProviderSkill[] = [
   },
 ];
 
+const mockWorkspaceSkill: ServerProviderSkill = {
+  name: "unslop",
+  displayName: "Unslop",
+  description: "Codebase cleanup",
+  path: "/skills/unslop",
+  enabled: true,
+};
+
 describe("SidebarThreadTitle", () => {
   it("renders plain title when no skills match or skills list is empty", () => {
     const markup = renderToStaticMarkup(
@@ -75,6 +83,23 @@ describe("resolveSidebarSkills", () => {
   it("returns skills from providerEntry when available", () => {
     const skills = resolveSidebarSkills({ skills: mockSkills });
     expect(skills).toEqual(mockSkills);
+  });
+
+  it("extracts skills from workspaceSnapshots in snapshot", () => {
+    const skills = resolveSidebarSkills({
+      skills: [],
+      snapshot: {
+        workspaceSnapshots: [
+          {
+            cwd: "/workspace/project",
+            checkedAt: 0,
+            slashCommands: [],
+            skills: [mockWorkspaceSkill],
+          },
+        ],
+      } as any,
+    });
+    expect(skills).toEqual([mockWorkspaceSkill]);
   });
 
   it("falls back to skills in providerEntryByInstanceId when providerEntry has no skills", () => {

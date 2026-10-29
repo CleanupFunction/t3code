@@ -1,4 +1,4 @@
-import type { ServerProviderSkill } from "@t3tools/contracts";
+import type { ServerProvider, ServerProviderSkill } from "@t3tools/contracts";
 import { formatProviderSkillDisplayName, matchInlineSkills } from "@t3tools/shared/inlineSkills";
 import type { ReactNode } from "react";
 import { ContextChip, ContextChipLabel } from "../ContextChip";
@@ -6,28 +6,62 @@ import { SKILL_CHIP_ICON_SVG } from "../composerInlineChip";
 
 export interface SidebarSkillsSourceEntry {
   readonly skills?: ReadonlyArray<ServerProviderSkill> | undefined;
+  readonly snapshot?: ServerProvider | undefined;
+}
+
+function collectSkillsFromEntry<Entry extends SidebarSkillsSourceEntry>(
+  entry: Entry | null | undefined,
+  seen: Set<string>,
+  out: ServerProviderSkill[],
+) {
+  if (!entry) return;
+  for (const skill of entry.skills ?? []) {
+    const key = skill.name.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(skill);
+    }
+  }
+  const snapshot = entry.snapshot;
+  if (snapshot) {
+    for (const skill of snapshot.skills ?? []) {
+      const key = skill.name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(skill);
+      }
+    }
+    const wsSnapshots = snapshot.workspaceSnapshots;
+    if (wsSnapshots) {
+      const list = Array.isArray(wsSnapshots) ? wsSnapshots : Object.values(wsSnapshots);
+      for (const ws of list) {
+        for (const skill of ws?.skills ?? []) {
+          const key = skill.name.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            out.push(skill);
+          }
+        }
+      }
+    }
+  }
 }
 
 export function resolveSidebarSkills<Entry extends SidebarSkillsSourceEntry>(
   providerEntry: Entry | null | undefined,
   providerEntryByInstanceId?: ReadonlyMap<string, Entry> | undefined,
 ): ReadonlyArray<ServerProviderSkill> {
-  if (providerEntry?.skills && providerEntry.skills.length > 0) {
-    return providerEntry.skills;
-  }
-  if (!providerEntryByInstanceId || providerEntryByInstanceId.size === 0) {
-    return [];
-  }
   const allSkills: ServerProviderSkill[] = [];
   const seen = new Set<string>();
-  for (const entry of providerEntryByInstanceId.values()) {
-    for (const skill of entry.skills ?? []) {
-      if (!seen.has(skill.name)) {
-        seen.add(skill.name);
-        allSkills.push(skill);
-      }
+
+  collectSkillsFromEntry(providerEntry, seen, allSkills);
+
+  if (providerEntryByInstanceId) {
+    for (const entry of providerEntryByInstanceId.values()) {
+      collectSkillsFromEntry(entry, seen, allSkills);
     }
   }
+
   return allSkills;
 }
 

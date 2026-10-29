@@ -54,6 +54,34 @@ export function isProviderInstancePickerVisible(entry: ProviderInstanceEntry): b
   return entry.enabled;
 }
 
+export function collectAllProviderSkills(
+  snapshot: ServerProvider,
+): ReadonlyArray<ServerProviderSkill> {
+  const seen = new Set<string>();
+  const allSkills: ServerProviderSkill[] = [];
+  for (const skill of snapshot.skills ?? []) {
+    const key = skill.name.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      allSkills.push(skill);
+    }
+  }
+  const wsSnapshots = snapshot.workspaceSnapshots;
+  if (wsSnapshots) {
+    const list = Array.isArray(wsSnapshots) ? wsSnapshots : Object.values(wsSnapshots);
+    for (const ws of list) {
+      for (const skill of ws?.skills ?? []) {
+        const key = skill.name.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          allSkills.push(skill);
+        }
+      }
+    }
+  }
+  return allSkills;
+}
+
 export function deriveProviderInstanceEntries(
   providers: ReadonlyArray<ServerProvider>,
 ): ReadonlyArray<ProviderInstanceEntry> {
@@ -78,7 +106,7 @@ export function deriveProviderInstanceEntries(
       isAvailable: snapshot.availability !== "unavailable",
       snapshot,
       models: snapshot.models,
-      skills: snapshot.skills,
+      skills: collectAllProviderSkills(snapshot),
     } satisfies ProviderInstanceEntry;
   });
 }
